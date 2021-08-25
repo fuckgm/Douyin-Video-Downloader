@@ -6,7 +6,15 @@
 # 📖使用流程
 1、电脑浏览器打开抖音web版,移动端浏览器请先更改浏览器ua为电脑ua再打开网页(https://www.douyin.com)
 
-2、非推荐页与直播页,点击视频进入详情页,点击标题下方的下载按钮;推荐页点击右下角三个点,选择下载
+2、不同页面，下载图标位置不同:
+
+(1)推荐页:点击右下角三个点,选择下载
+
+(2)频道页:每个视频作者名边上都有下载按钮,点击下载;或者也可以点击视频进入详情页,参考(3)下载
+
+(3)详情页:视频名下方，分享按钮右侧为下载按钮
+
+(4)直播页:暂不支持直播下载
 
 # 🔔特别声明
 1、本人业余时间开发，并非专业开发者，代码质量可能不佳。如果有大佬想帮忙优化，可以联系我QwQ
@@ -23,5 +31,9 @@
 * Github仓库:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader
 * Gitee 仓库:https://gitee.com/gem_xl/Douyin-Video-Downloader
 
+# 🔍参考截图
+* 从左往右(从上往下)依次为:推荐页、详情页、频道页
 ![推荐页](https://user-images.githubusercontent.com/87429695/130788855-0a08659d-bce2-412c-ae24-bff209fbb33d.png)
 ![详情页](https://user-images.githubusercontent.com/87429695/130788874-be412740-a314-4616-8a86-5e9fad8b9889.png)
+![频道](https://user-images.githubusercontent.com/87429695/130845639-ad4afe36-f594-4d3b-9994-bd5e2881a7b8.png)
+
