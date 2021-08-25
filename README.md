@@ -22,3 +22,6 @@
 * Greasyfork:https://greasyfork.org/scripts/431344
 * Github仓库:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader
 * Gitee 仓库:https://gitee.com/gem_xl/Douyin-Video-Downloader
+
+![推荐页](https://user-images.githubusercontent.com/87429695/130788855-0a08659d-bce2-412c-ae24-bff209fbb33d.png)
+![详情页](https://user-images.githubusercontent.com/87429695/130788874-be412740-a314-4616-8a86-5e9fad8b9889.png)
