@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.4
+// @version      1.6
 // @description  下载抖音无水印视频（仅仅支持pc版网页，移动端请将浏览器ua改成电脑ua）
 // @author       那年那兔那些事
 // @include      *://*.douyin.com/*
@@ -97,16 +97,20 @@
 						clearInterval(Timer);
 						console.log("抖音视频下载器启动成功,定时器(id:" + Timer + ")关闭");
 						Timer = -1;
+						var videoURL = document.getElementsByTagName("video")[0].src;
 						var newBtn = BtnList.children[0].cloneNode(true);
 						newBtn.setAttribute("id", "newBtnDownload");
 						newBtn.children[0].children[0].setAttribute("d",
 							"M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z"
 						);
 						newBtn.children[1].setAttribute("class", "_891e9d38c00e1b78e2eae43ab8b92359-scss");
-						newBtn.children[1].innerText = "下载";
-						newBtn.onclick = function() {
-							var videoURL = document.getElementsByTagName("video")[0].src;
+						newBtn.children[1].innerHTML = "<a href=" + videoURL +
+							" style='text-decoration : none'>下载</a>";
+						newBtn.children[0].onclick = function() {
 							open(videoURL);
+						}
+						newBtn.onclick = function() {
+							document.getElementsByTagName('video')[0].pause();
 						}
 						BtnList.appendChild(newBtn);
 					}
@@ -136,13 +140,17 @@
 								.name =
 								"newBtnDownload";
 							var newBtn = BtnList.children[1].cloneNode(true);
+							var videoURL = document.getElementsByTagName("video")[0].src;
 							newBtn.children[0].children[0].children[0].setAttribute("d",
 								"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
 							);
-							newBtn.children[1].innerText = "下载";
-							newBtn.onclick = function() {
-								var videoURL = document.getElementsByTagName("video")[0].src;
+							newBtn.children[1].innerHTML = "<a href=" + videoURL +
+								" style='text-decoration : none'>下载</a>";
+							newBtn.children[0].onclick = function() {
 								open(videoURL);
+							}
+							newBtn.onclick = function() {
+								document.getElementsByTagName('video')[0].pause();
 							}
 							BtnList.appendChild(newBtn);
 						}
@@ -179,8 +187,10 @@
 				console.log("已释放上一定时器(ID:" + Timer + ")");
 				Timer = -1;
 			}
-			var videoURL = checkUrl;
-			var videoID = checkUrl.slice(checkUrl.search("tos-cn-ve-15/") + "tos-cn-ve-15/".length);
+			var videoOBJ = document.getElementsByTagName('video')[0];
+			videoOBJ.pause();
+			var videoURL = location.href;
+			var videoID = videoURL.slice(videoURL.search("tos-cn-ve-15/") + "tos-cn-ve-15/".length);
 			videoID = videoID.slice(0, videoID.search("/"));
 			var a = document.createElement("a");
 			a.href = videoURL;
