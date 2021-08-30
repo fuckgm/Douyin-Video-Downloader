@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.6
-// @description  下载抖音无水印视频（仅仅支持pc版网页，移动端请将浏览器ua改成电脑ua）
+// @version      1.9
+// @description  下载抖音无水印视频（仅仅支持pc版网页，移动端请将浏览器ua改成电脑ua）,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
@@ -20,11 +20,18 @@
 				res = "recommend";
 			} else if (Url.search("channel") !== -1) {
 				res = "channel";
+			} else if (Url.search("follow") !== -1) {
+				res = "follow";
 			} else if (location.pathname === "/") {
 				res = "home";
 			}
 		} else if (Url.search("live.douyin.com") !== -1) {
-			res = "live";
+            if(location.pathname === "/"){
+                res = "livehome";
+            }else{
+                res = "livedetail";
+            }
+			
 		} else if (Url.search("douyinvod.com") !== -1) {
 			res = "download";
 		}
@@ -80,6 +87,20 @@
 		}
 		a0.name = "newBtn";
 	}
+
+    function displayAllChoice(){
+        var ChoiceObj=document.getElementsByClassName("d665312e963d020cd82d569bddfacb81-scss");
+        if(ChoiceObj.length!==0){
+            for(let i=0;i<ChoiceObj.length;i++){
+                if(ChoiceObj[i].name!=="Displaying"){
+                    if(ChoiceObj[i].children[0].href.search("200204")===-1){
+                        ChoiceObj[i].style.display="flex";
+                    }
+                    ChoiceObj[i].name="Displaying";
+                }
+            }
+        }
+    }
 
 	function mainFn() {
 		if (checkUrl() === "detail") {
@@ -196,7 +217,15 @@
 			a.href = videoURL;
 			a.download = videoID + ".mp4";
 			a.click();
-		} else if (checkUrl() === "live") {
+		} else if ((checkUrl() === "livehome")||(checkUrl() === "livedetail")) {
+			Page = checkUrl();
+			console.log("当前页判断为" + Page + "页");
+			if (Timer !== -1) {
+				clearInterval(Timer);
+				console.log("已释放上一定时器(ID:" + Timer + ")");
+				Timer = -1;
+			}
+		} else if (checkUrl() === "follow") {
 			Page = checkUrl();
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
@@ -207,14 +236,25 @@
 		}
 	}
 	var Timer = -1;
+    var DisplayFlag=true;
 	var Page = "others";
 	var checkTimer = setInterval(function() {
-		var currentPage = checkUrl()
+		var currentPage = checkUrl();
 		if (Page !== currentPage) {
 			if (Page !== "others") {
 				console.log("页面切换(上一页为" + Page + "页)");
 			}
 			mainFn();
+            if((currentPage==="home")||(currentPage==="channel")||(currentPage==="recommend")||(currentPage==="follow")||(currentPage==="livehome")){
+                displayAllChoice();
+                console.log("显示"+currentPage+"页侧栏所有选项");
+                DisplayFlag=false;
+                var PopObj=document.getElementsByClassName("athena-survey-widget");
+                if(PopObj.length!==0){
+                    PopObj[0].style.display="none";
+                    console.log("检测到弹窗,已屏蔽");
+                }
+            }
 		}
 	}, 200);
 	console.log("抖音视频下载器(URL监听检测)启动,定时器(id:" + checkTimer + ")开启");
