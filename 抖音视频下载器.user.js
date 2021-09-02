@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.11
-// @description  下载抖音无水印视频（仅仅支持pc版网页，移动端请将浏览器ua改成电脑ua）,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
+// @version      1.12
+// @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
@@ -182,7 +182,7 @@
 					console.log("2s超时,定时器(id:" + Timer + ")关闭");
 				}
 			}, 2000);
-		} else if (checkUrl() === "recommend") {
+		} else if ((checkUrl() === "recommend") || (checkUrl() === "follow")) {
 			Page = checkUrl();
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
@@ -200,6 +200,12 @@
 								"newBtnDownload";
 							var newBtn = BtnList.children[1].cloneNode(true);
 							var videoURL = document.getElementsByTagName("video")[0].src;
+							var pathLen = newBtn.children[0].children[0].children.length;
+							if (pathLen > 1) {
+								for (let i = 1; i < pathLen; i++) {
+									newBtn.children[0].children[0].children[i].style.display = "none";
+								}
+							}
 							newBtn.children[0].children[0].children[0].setAttribute("d",
 								"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
 							);
@@ -256,14 +262,6 @@
 			a.download = videoID + ".mp4";
 			a.click();
 		} else if ((checkUrl() === "livehome") || (checkUrl() === "livedetail")) {
-			Page = checkUrl();
-			console.log("当前页判断为" + Page + "页");
-			if (Timer !== -1) {
-				clearInterval(Timer);
-				console.log("已释放上一定时器(ID:" + Timer + ")");
-				Timer = -1;
-			}
-		} else if (checkUrl() === "follow") {
 			Page = checkUrl();
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
