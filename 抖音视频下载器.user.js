@@ -1,15 +1,52 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.9
+// @version      1.11
 // @description  下载抖音无水印视频（仅仅支持pc版网页，移动端请将浏览器ua改成电脑ua）,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
+// @include      *://*.iesdouyin.com/*
 // @icon         https://s3.bmp.ovh/imgs/2021/08/63899211b3595b11.png
 // ==/UserScript==
 
 (function() {
+	function checkUA() {
+		var UAstr = "pc";
+		if (/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+			UAstr = "mobile";
+		}
+		return UAstr;
+	}
+
+	function changeUrl(UAstr) {
+		if (UAstr === "pc") {
+			var Res = confirm("点击确认跳转PC版页面");
+			if (Res == true) {
+				var currentURL = location.pathname;
+				var VideoID = currentURL.slice(currentURL.search("video/") + "video/".length);
+				location.href = "https://www.douyin.com/video/" + VideoID;
+			} else {
+				console.log("用户取消跳转PC版页面");
+			}
+		}
+	}
+
+	function shareBtn() {
+		var PareObj = document.getElementsByClassName("author-name--2Gvl7");
+		var VideoObj = document.getElementsByTagName("video");
+		if ((PareObj.length !== 0) && (VideoObj.length !== 0)) {
+			if (PareObj[0].name !== "AddBtn") {
+				var VideoUrl = VideoObj[0].src.replace("playwm", "play");
+				var OriginHTML = PareObj[0].innerHTML;
+				var BtnHtml = "<a href=" + VideoUrl +
+					"target='_blank'><span style='font-size: 0.34667rem;line-height: 0.48rem;margin-bottom: 0.10667rem;color: rgba(255,255,255,0.9);border:2px solid rgba(255,255,255,0.9);border-radius: 4px;cursor:pointer;'>点击下载</span></a>";
+				PareObj[0].innerHTML = OriginHTML + "   " + BtnHtml;
+				PareObj[0].name = "AddBtn";
+			}
+		}
+	}
+
 	function checkUrl() {
 		var Url = window.location.href;
 		var res = "others";
@@ -26,14 +63,15 @@
 				res = "home";
 			}
 		} else if (Url.search("live.douyin.com") !== -1) {
-            if(location.pathname === "/"){
-                res = "livehome";
-            }else{
-                res = "livedetail";
-            }
-			
+			if (location.pathname === "/") {
+				res = "livehome";
+			} else {
+				res = "livedetail";
+			}
 		} else if (Url.search("douyinvod.com") !== -1) {
 			res = "download";
+		} else if (Url.search("iesdouyin.com/share/video/") !== -1) {
+			res = "appshare";
 		}
 		return res;
 	}
@@ -88,19 +126,19 @@
 		a0.name = "newBtn";
 	}
 
-    function displayAllChoice(){
-        var ChoiceObj=document.getElementsByClassName("d665312e963d020cd82d569bddfacb81-scss");
-        if(ChoiceObj.length!==0){
-            for(let i=0;i<ChoiceObj.length;i++){
-                if(ChoiceObj[i].name!=="Displaying"){
-                    if(ChoiceObj[i].children[0].href.search("200204")===-1){
-                        ChoiceObj[i].style.display="flex";
-                    }
-                    ChoiceObj[i].name="Displaying";
-                }
-            }
-        }
-    }
+	function displayAllChoice() {
+		var ChoiceObj = document.getElementsByClassName("d665312e963d020cd82d569bddfacb81-scss");
+		if (ChoiceObj.length !== 0) {
+			for (let i = 0; i < ChoiceObj.length; i++) {
+				if (ChoiceObj[i].name !== "Displaying") {
+					if (ChoiceObj[i].children[0].href.search("200204") === -1) {
+						ChoiceObj[i].style.display = "flex";
+					}
+					ChoiceObj[i].name = "Displaying";
+				}
+			}
+		}
+	}
 
 	function mainFn() {
 		if (checkUrl() === "detail") {
@@ -119,7 +157,7 @@
 						console.log("抖音视频下载器启动成功,定时器(id:" + Timer + ")关闭");
 						Timer = -1;
 						var videoURL = document.getElementsByTagName("video")[0].src;
-						var newBtn = BtnList.children[0].cloneNode(true);
+						var newBtn = BtnList.children[2].cloneNode(true);
 						newBtn.setAttribute("id", "newBtnDownload");
 						newBtn.children[0].children[0].setAttribute("d",
 							"M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z"
@@ -217,7 +255,7 @@
 			a.href = videoURL;
 			a.download = videoID + ".mp4";
 			a.click();
-		} else if ((checkUrl() === "livehome")||(checkUrl() === "livedetail")) {
+		} else if ((checkUrl() === "livehome") || (checkUrl() === "livedetail")) {
 			Page = checkUrl();
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
@@ -233,10 +271,28 @@
 				console.log("已释放上一定时器(ID:" + Timer + ")");
 				Timer = -1;
 			}
+		} else if (checkUrl() === "appshare") {
+			Page = checkUrl();
+			console.log("当前页判断为" + Page + "页");
+			if (Timer !== -1) {
+				clearInterval(Timer);
+				console.log("已释放上一定时器(ID:" + Timer + ")");
+				Timer = -1;
+			}
+			var pastUA = "";
+			Timer = setInterval(function() {
+				var currentUA = checkUA();
+				if (pastUA !== currentUA) {
+					pastUA = currentUA;
+					changeUrl(currentUA);
+				}
+				shareBtn();
+			}, 500);
+			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
 		}
 	}
 	var Timer = -1;
-    var DisplayFlag=true;
+	var DisplayFlag = true;
 	var Page = "others";
 	var checkTimer = setInterval(function() {
 		var currentPage = checkUrl();
@@ -245,16 +301,22 @@
 				console.log("页面切换(上一页为" + Page + "页)");
 			}
 			mainFn();
-            if((currentPage==="home")||(currentPage==="channel")||(currentPage==="recommend")||(currentPage==="follow")||(currentPage==="livehome")){
-                displayAllChoice();
-                console.log("显示"+currentPage+"页侧栏所有选项");
-                DisplayFlag=false;
-                var PopObj=document.getElementsByClassName("athena-survey-widget");
-                if(PopObj.length!==0){
-                    PopObj[0].style.display="none";
-                    console.log("检测到弹窗,已屏蔽");
-                }
-            }
+			if ((currentPage === "home") || (currentPage === "channel") || (currentPage === "recommend") ||
+				(currentPage === "follow") || (currentPage === "livehome")) {
+				displayAllChoice();
+				console.log("显示" + currentPage + "页侧栏所有选项");
+				DisplayFlag = false;
+				var PopObj = document.getElementsByClassName("athena-survey-widget");
+				if (PopObj.length !== 0) {
+					PopObj[0].style.display = "none";
+					console.log("检测到非必要弹窗,已屏蔽");
+				}
+				var LoginPop = document.getElementsByClassName("login-guide-container");
+				if (LoginPop.length !== 0) {
+					LoginPop[0].style.display = "none";
+					console.log("检测到登录弹窗,已屏蔽");
+				}
+			}
 		}
 	}, 200);
 	console.log("抖音视频下载器(URL监听检测)启动,定时器(id:" + checkTimer + ")开启");
