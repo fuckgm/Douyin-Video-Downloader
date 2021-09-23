@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.12
+// @version      1.14
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
+// @license      MIT License
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
 // @include      *://*.iesdouyin.com/*
@@ -32,33 +33,22 @@
 		}
 	}
 
-	function shareBtn() {
-		var PareObj = document.getElementsByClassName("author-name--2Gvl7");
-		var VideoObj = document.getElementsByTagName("video");
-		if ((PareObj.length !== 0) && (VideoObj.length !== 0)) {
-			if (PareObj[0].name !== "AddBtn") {
-				var VideoUrl = VideoObj[0].src.replace("playwm", "play");
-				var OriginHTML = PareObj[0].innerHTML;
-				var BtnHtml = "<a href=" + VideoUrl +
-					"target='_blank'><span style='font-size: 0.34667rem;line-height: 0.48rem;margin-bottom: 0.10667rem;color: rgba(255,255,255,0.9);border:2px solid rgba(255,255,255,0.9);border-radius: 4px;cursor:pointer;'>点击下载</span></a>";
-				PareObj[0].innerHTML = OriginHTML + "   " + BtnHtml;
-				PareObj[0].name = "AddBtn";
-			}
-		}
-	}
-
 	function checkUrl() {
 		var Url = window.location.href;
 		var res = "others";
 		if (Url.search("www.douyin.com") !== -1) {
-			if (Url.search("video") !== -1) {
+			if (Url.search("/video") !== -1) {
 				res = "detail";
-			} else if (Url.search("recommend") !== -1) {
+			} else if (Url.search("/recommend") !== -1) {
 				res = "recommend";
-			} else if (Url.search("channel") !== -1) {
+			} else if (Url.search("/channel") !== -1) {
 				res = "channel";
-			} else if (Url.search("follow") !== -1) {
+			} else if (Url.search("/follow") !== -1) {
 				res = "follow";
+			} else if (Url.search("/search") !== -1) {
+				res = "search";
+			} else if (Url.search("/hot") !== -1) {
+				res = "hot";
 			} else if (location.pathname === "/") {
 				res = "home";
 			}
@@ -76,7 +66,7 @@
 		return res;
 	}
 
-	function createBtn(a0, i) {
+	function createListBtn(a0, i) {
 		var VideoUrl;
 		var videoID = a0.parentElement.children[0].href;
 		if (videoID !== undefined) {
@@ -126,23 +116,79 @@
 		a0.name = "newBtn";
 	}
 
-	function displayAllChoice() {
-		var ChoiceObj = document.getElementsByClassName("d665312e963d020cd82d569bddfacb81-scss");
-		if (ChoiceObj.length !== 0) {
-			for (let i = 0; i < ChoiceObj.length; i++) {
-				if (ChoiceObj[i].name !== "Displaying") {
-					if (ChoiceObj[i].children[0].href.search("200204") === -1) {
-						ChoiceObj[i].style.display = "flex";
-					}
-					ChoiceObj[i].name = "Displaying";
-				}
+	function createShareBtn() {
+		var PareObj = document.getElementsByClassName("author-name--2Gvl7");
+		var VideoObj = document.getElementsByTagName("video");
+		if ((PareObj.length !== 0) && (VideoObj.length !== 0)) {
+			if (PareObj[0].name !== "AddBtn") {
+				var VideoUrl = VideoObj[0].src.replace("playwm", "play");
+				var OriginHTML = PareObj[0].innerHTML;
+				var BtnHtml = "<a href=" + VideoUrl +
+					"target='_blank'><span style='font-size: 0.34667rem;line-height: 0.48rem;margin-bottom: 0.10667rem;color: rgba(255,255,255,0.9);border:2px solid rgba(255,255,255,0.9);border-radius: 4px;cursor:pointer;'>点击下载</span></a>";
+				PareObj[0].innerHTML = OriginHTML + "   " + BtnHtml;
+				PareObj[0].name = "AddBtn";
 			}
 		}
 	}
 
+	function createDetailBtn() {
+		var BtnList = document.getElementsByClassName("_9c2452d0d6d8dbc6de035f37c1b11314-scss")[0];
+		var videoURL = document.getElementsByTagName("video")[0].src;
+		var newBtn = BtnList.children[2].cloneNode(true);
+		newBtn.setAttribute("id", "newBtnDownload");
+		newBtn.children[0].children[0].setAttribute("d",
+			"M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z"
+		);
+		newBtn.children[1].setAttribute("class", "_891e9d38c00e1b78e2eae43ab8b92359-scss");
+		newBtn.children[1].innerHTML = "<a href=" + videoURL +
+			" style='text-decoration : none'>下载</a>";
+		newBtn.children[0].onclick = function() {
+			open(videoURL);
+		}
+		newBtn.onclick = function() {
+			document.getElementsByTagName('video')[0].pause();
+		}
+		BtnList.appendChild(newBtn);
+	}
+
+	function createSwiperBtn() {
+		var BtnList = document.getElementsByClassName("_240bd410e1956131036dfa3fa3b986d7-scss")[0];
+		document.getElementsByClassName("_240bd410e1956131036dfa3fa3b986d7-scss")[0]
+			.name =
+			"newBtnDownload";
+		var newBtn = BtnList.children[1].cloneNode(true);
+		var videoURL = document.getElementsByTagName("video")[0].src;
+		var pathLen = newBtn.children[0].children[0].children.length;
+		if (pathLen > 1) {
+			for (let i = 1; i < pathLen; i++) {
+				newBtn.children[0].children[0].children[i].style.display = "none";
+			}
+		}
+		newBtn.children[0].children[0].children[0].setAttribute("d",
+			"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
+		);
+		newBtn.children[1].innerHTML = "<a href=" + videoURL +
+			" style='text-decoration : none'>下载</a>";
+		newBtn.children[0].onclick = function() {
+			open(videoURL);
+		}
+		newBtn.onclick = function() {
+			document.getElementsByTagName('video')[0].pause();
+		}
+		BtnList.appendChild(newBtn);
+	}
+
 	function mainFn() {
-		if (checkUrl() === "detail") {
-			Page = checkUrl();
+		if (currentPage === "others") {
+			Page = currentPage;
+			console.log("当前页判断为" + Page + "页");
+			if (Timer !== -1) {
+				clearInterval(Timer);
+				console.log("已释放上一定时器(ID:" + Timer + ")");
+				Timer = -1;
+			}
+		} else if (currentPage === "detail") {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
@@ -156,22 +202,7 @@
 						clearInterval(Timer);
 						console.log("抖音视频下载器启动成功,定时器(id:" + Timer + ")关闭");
 						Timer = -1;
-						var videoURL = document.getElementsByTagName("video")[0].src;
-						var newBtn = BtnList.children[2].cloneNode(true);
-						newBtn.setAttribute("id", "newBtnDownload");
-						newBtn.children[0].children[0].setAttribute("d",
-							"M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z"
-						);
-						newBtn.children[1].setAttribute("class", "_891e9d38c00e1b78e2eae43ab8b92359-scss");
-						newBtn.children[1].innerHTML = "<a href=" + videoURL +
-							" style='text-decoration : none'>下载</a>";
-						newBtn.children[0].onclick = function() {
-							open(videoURL);
-						}
-						newBtn.onclick = function() {
-							document.getElementsByTagName('video')[0].pause();
-						}
-						BtnList.appendChild(newBtn);
+						createDetailBtn();
 					}
 				}
 			}, 200);
@@ -182,8 +213,8 @@
 					console.log("2s超时,定时器(id:" + Timer + ")关闭");
 				}
 			}, 2000);
-		} else if ((checkUrl() === "recommend") || (checkUrl() === "follow")) {
-			Page = checkUrl();
+		} else if ((currentPage === "recommend") || (currentPage === "follow")) {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
@@ -195,36 +226,15 @@
 				if (BtnList !== undefined) {
 					if (BtnList.name !== "newBtnDownload") {
 						if (BtnList.children[0] !== undefined) {
-							document.getElementsByClassName("_240bd410e1956131036dfa3fa3b986d7-scss")[0]
-								.name =
-								"newBtnDownload";
-							var newBtn = BtnList.children[1].cloneNode(true);
-							var videoURL = document.getElementsByTagName("video")[0].src;
-							var pathLen = newBtn.children[0].children[0].children.length;
-							if (pathLen > 1) {
-								for (let i = 1; i < pathLen; i++) {
-									newBtn.children[0].children[0].children[i].style.display = "none";
-								}
-							}
-							newBtn.children[0].children[0].children[0].setAttribute("d",
-								"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
-							);
-							newBtn.children[1].innerHTML = "<a href=" + videoURL +
-								" style='text-decoration : none'>下载</a>";
-							newBtn.children[0].onclick = function() {
-								open(videoURL);
-							}
-							newBtn.onclick = function() {
-								document.getElementsByTagName('video')[0].pause();
-							}
-							BtnList.appendChild(newBtn);
+							createSwiperBtn();
 						}
 					}
 				}
 			}, 200);
 			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
-		} else if ((checkUrl() === "channel") || (checkUrl() === "home")) {
-			Page = checkUrl();
+		} else if ((currentPage === "channel") || (currentPage === "home") || (currentPage === "search") || (
+				currentPage === "hot")) {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
@@ -237,15 +247,15 @@
 					if (a.length !== 0) {
 						for (let i = 0; i < a.length; i++) {
 							if (a[i].name !== "newBtn") {
-								createBtn(a[i], i);
+								createListBtn(a[i], i);
 							}
 						}
 					}
 				}
 			}, 200);
 			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
-		} else if (checkUrl() === "download") {
-			Page = checkUrl();
+		} else if (currentPage === "download") {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
@@ -261,16 +271,16 @@
 			a.href = videoURL;
 			a.download = videoID + ".mp4";
 			a.click();
-		} else if ((checkUrl() === "livehome") || (checkUrl() === "livedetail")) {
-			Page = checkUrl();
+		} else if ((currentPage === "livehome") || (currentPage === "livedetail")) {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
 				console.log("已释放上一定时器(ID:" + Timer + ")");
 				Timer = -1;
 			}
-		} else if (checkUrl() === "appshare") {
-			Page = checkUrl();
+		} else if (currentPage === "appshare") {
+			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
@@ -284,38 +294,61 @@
 					pastUA = currentUA;
 					changeUrl(currentUA);
 				}
-				shareBtn();
+				createShareBtn();
 			}, 500);
 			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
 		}
 	}
+
+	function displayAllChoice() {
+		if ((currentPage === "home") || (currentPage === "channel") || (currentPage === "recommend") ||
+			(currentPage === "follow") || (currentPage === "livehome") || (currentPage === "hot")) {
+			var ChoiceObj = document.getElementsByClassName("d665312e963d020cd82d569bddfacb81-scss");
+			if (ChoiceObj.length !== 0) {
+				for (let i = 0; i < ChoiceObj.length; i++) {
+					if (ChoiceObj[i].name !== "Displaying") {
+						if (ChoiceObj[i].children[0].href.search("200204") === -1) {
+							ChoiceObj[i].style.display = "flex";
+						}
+						ChoiceObj[i].name = "Displaying";
+					}
+				}
+			}
+			console.log("显示" + currentPage + "页侧栏所有选项");
+		}
+
+	}
+
+	function hidePopup() {
+		var ClassArray = ["login-guide-container", "athena-survey-widget",
+			"athena-survey-widget  ltr desktop-normal theme-flgd   "
+		];
+		var HideNum = 0;
+		for (let i = 0; i < ClassArray.length; i++) {
+			var PopObj = document.getElementsByClassName(ClassArray[i])[0];
+			if (PopObj && PopObj.style.display !== "none") {
+				PopObj.style.display = "none";
+				HideNum += 1;
+			}
+		}
+		if (HideNum > 0) {
+			console.log(currentPage + "页检测到" + HideNum + "个非必要弹窗,已隐藏!");
+		}
+	}
+
 	var Timer = -1;
-	var DisplayFlag = true;
 	var Page = "others";
+	var currentPage = "others";
 	var checkTimer = setInterval(function() {
-		var currentPage = checkUrl();
+		currentPage = checkUrl();
+		hidePopup();
 		if (Page !== currentPage) {
 			if (Page !== "others") {
 				console.log("页面切换(上一页为" + Page + "页)");
 			}
 			mainFn();
-			if ((currentPage === "home") || (currentPage === "channel") || (currentPage === "recommend") ||
-				(currentPage === "follow") || (currentPage === "livehome")) {
-				displayAllChoice();
-				console.log("显示" + currentPage + "页侧栏所有选项");
-				DisplayFlag = false;
-				var PopObj = document.getElementsByClassName("athena-survey-widget");
-				if (PopObj.length !== 0) {
-					PopObj[0].style.display = "none";
-					console.log("检测到非必要弹窗,已屏蔽");
-				}
-				var LoginPop = document.getElementsByClassName("login-guide-container");
-				if (LoginPop.length !== 0) {
-					LoginPop[0].style.display = "none";
-					console.log("检测到登录弹窗,已屏蔽");
-				}
-			}
+			displayAllChoice();
 		}
 	}, 200);
-	console.log("抖音视频下载器(URL监听检测)启动,定时器(id:" + checkTimer + ")开启");
+	console.log("抖音视频下载器(URL监听与弹窗检测)启动,定时器(id:" + checkTimer + ")开启");
 })();
