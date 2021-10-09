@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.14
-// @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge等；移动端Kiwi、Yandex、Via等
+// @version      1.15
+// @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
 // @include      *://*.douyin.com/*
@@ -178,6 +178,38 @@
 		BtnList.appendChild(newBtn);
 	}
 
+	function createVideoBtn() {
+		var relativeTitleBox = document.getElementsByClassName("_86d134501588dfefce20e44d7f9e587b-scss")[0];
+		var relativeRoomBox = document.getElementsByClassName("_03c7d709ebf244be0fac49bd513b6d75-scss")[0];
+		var oldTitle = document.createElement("span");
+		var newBtn = document.createElement("span");
+		var displayText = "[ 展开 ]";
+		var hideText = "[ 隐藏 ]";
+		oldTitle.innerHTML = relativeTitleBox.innerHTML;
+		newBtn.innerHTML = displayText;
+		newBtn.style = "margin-left:10px;color:rgba(47, 48, 53,0.7);";
+		newBtn.id = "relativeBtn";
+		newBtn.onclick = function() {
+			if (newBtn.innerText === displayText) {
+				relativeRoomBox.style.display = "";
+				newBtn.innerText = hideText;
+			} else {
+				relativeRoomBox.style.display = "none";
+				newBtn.innerText = displayText;
+			}
+		}
+		newBtn.onmouseover = function() {
+			newBtn.style.color = "rgba(47, 48, 53,0.9)";
+		}
+		newBtn.onmouseleave = function() {
+			newBtn.style.color = "rgba(47, 48, 53,0.7)";
+		}
+		relativeTitleBox.innerHTML = ""
+		relativeTitleBox.appendChild(oldTitle);
+		relativeTitleBox.appendChild(newBtn);
+		relativeRoomBox.style.display = "none";
+	}
+
 	function mainFn() {
 		if (currentPage === "others") {
 			Page = currentPage;
@@ -320,15 +352,36 @@
 	}
 
 	function hidePopup() {
+		//普通弹窗，直接无脑屏蔽了
 		var ClassArray = ["login-guide-container", "athena-survey-widget",
 			"athena-survey-widget  ltr desktop-normal theme-flgd   "
 		];
 		var HideNum = 0;
+		var PopObj;
 		for (let i = 0; i < ClassArray.length; i++) {
-			var PopObj = document.getElementsByClassName(ClassArray[i])[0];
+			PopObj = document.getElementsByClassName(ClassArray[i])[0];
 			if (PopObj && PopObj.style.display !== "none") {
 				PopObj.style.display = "none";
 				HideNum += 1;
+			}
+		}
+		//登录弹窗，不能无脑屏蔽，需要考虑情况
+		try {
+			PopObj = document.getElementById("login-pannel").parentElement.parentElement;
+		} catch (e) {
+			PopObj = false;
+		}
+		if (loginPopupFlag) {
+			if (PopObj && PopObj.style.display !== "none") {
+				PopObj.style.display = "none";
+				HideNum += 1;
+			}
+		} else {
+			if (PopObj && PopObj.style.display === "none") {
+				PopObj.style.display = "";
+			}
+			if (PopObj === false) {
+				loginPopupFlag = true;
 			}
 		}
 		if (HideNum > 0) {
@@ -336,12 +389,33 @@
 		}
 	}
 
+	function loginBtnFn() {
+		var ClassArray = [
+			"abace09bde29f9d2077ba2a9e9e2b67d-scss _93fbc55b0dd6667bca4858426fd34dde-scss _14339689bca6b9eda19c146a14df625e-scss _7ecaa8ba84de53f8bea1cb4996e405a7-scss _8466f1adbc57d0978d0ac366e59ed9a7-scss",
+			"bed9a6c25b644fe7083f8daf4da9574b-scss _7da806a86cca87e85c2238c842716b35-scss _981181df75601f4772116d77f7b11bc3-scss d137d3747225da4f801767811d7104db-scss _1e88f2ef9e8486fae5ffe34156b1ded4-scss"
+		];
+		for (let i = 0; i < ClassArray.length; i++) {
+			var LoginBtn = document.getElementsByClassName(ClassArray[i])[0];
+			if (LoginBtn) {
+				break;
+			}
+		}
+		if (LoginBtn && LoginBtn.name !== "newLoginBtn") {
+			LoginBtn.addEventListener("click", function() {
+				loginPopupFlag = false;
+				console.log("用户登录中...");
+			});
+			LoginBtn.name = "newLoginBtn";
+		}
+	}
 	var Timer = -1;
 	var Page = "others";
 	var currentPage = "others";
+	var loginPopupFlag = true;
 	var checkTimer = setInterval(function() {
 		currentPage = checkUrl();
 		hidePopup();
+		loginBtnFn();
 		if (Page !== currentPage) {
 			if (Page !== "others") {
 				console.log("页面切换(上一页为" + Page + "页)");
