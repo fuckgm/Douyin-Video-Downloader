@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.15
+// @version      1.16
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等；移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
@@ -117,16 +117,20 @@
 	}
 
 	function createShareBtn() {
-		var PareObj = document.getElementsByClassName("author-name--2Gvl7");
+		var OldTittle = document.getElementsByClassName("author-name--2Gvl7");
 		var VideoObj = document.getElementsByTagName("video");
-		if ((PareObj.length !== 0) && (VideoObj.length !== 0)) {
-			if (PareObj[0].name !== "AddBtn") {
+		if (document.getElementById("NewDownloadBtn") === null) {
+			if ((OldTittle.length !== 0) && (VideoObj.length !== 0)) {
+				OldTittle = OldTittle[0];
+				var NewTittle = OldTittle.cloneNode(true);
 				var VideoUrl = VideoObj[0].src.replace("playwm", "play");
-				var OriginHTML = PareObj[0].innerHTML;
+				var OriginHTML = NewTittle.innerHTML;
 				var BtnHtml = "<a href=" + VideoUrl +
 					"target='_blank'><span style='font-size: 0.34667rem;line-height: 0.48rem;margin-bottom: 0.10667rem;color: rgba(255,255,255,0.9);border:2px solid rgba(255,255,255,0.9);border-radius: 4px;cursor:pointer;'>点击下载</span></a>";
-				PareObj[0].innerHTML = OriginHTML + "   " + BtnHtml;
-				PareObj[0].name = "AddBtn";
+				NewTittle.innerHTML = OriginHTML + "   " + BtnHtml;
+				NewTittle.id = "NewDownloadBtn";
+				OldTittle.parentElement.insertBefore(NewTittle, OldTittle);
+				OldTittle.style.display = "none";
 			}
 		}
 	}
@@ -303,13 +307,31 @@
 			a.href = videoURL;
 			a.download = videoID + ".mp4";
 			a.click();
-		} else if ((currentPage === "livehome") || (currentPage === "livedetail")) {
+		} else if (currentPage === "livehome") {
 			Page = currentPage;
 			console.log("当前页判断为" + Page + "页");
 			if (Timer !== -1) {
 				clearInterval(Timer);
 				console.log("已释放上一定时器(ID:" + Timer + ")");
 				Timer = -1;
+			}
+		} else if (currentPage === "livedetail") {
+			Page = currentPage;
+			console.log("当前页判断为" + Page + "页");
+			if (Timer !== -1) {
+				clearInterval(Timer);
+				console.log("已释放上一定时器(ID:" + Timer + ")");
+				Timer = -1;
+			}
+			createVideoBtn();
+			window.onload = function() {
+				var Btn = document.getElementById("relativeBtn");
+				if (Btn) {
+					if (Btn.innerText === "[ 隐藏 ]") {
+						Btn.click();
+						console.log("隐藏相关直播");
+					}
+				}
 			}
 		} else if (currentPage === "appshare") {
 			Page = currentPage;
