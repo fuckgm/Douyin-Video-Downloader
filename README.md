@@ -104,13 +104,10 @@ A4:该视频为直播间而不是视频资源，无法下载
 
 4、再次提醒:本脚本仅供学习交流使用!切勿商用!切勿商用!切勿商用!
 
-# 📪联系方式
-* 邮箱：gem_xl@petalmail.com
-
 # 🌎相关地址
+* 更新日志:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader#更新日志
 * Greasyfork:https://greasyfork.org/scripts/431344
 * Github仓库:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader
-* Gitee 仓库:https://gitee.com/gem_xl/Douyin-Video-Downloader
 
 # 🔍参考截图
 * 从左往右(从上往下)依次为:推荐页、详情页、频道页、移动端分享页
