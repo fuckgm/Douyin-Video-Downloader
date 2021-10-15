@@ -105,9 +105,9 @@ A4:该视频为直播间而不是视频资源，无法下载
 * 再次提醒:本脚本仅供学习交流使用!切勿商用!切勿商用!切勿商用!
 
 # 🌎相关地址
-* 更新日志:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader#更新日志
-* Greasyfork:https://greasyfork.org/scripts/431344
-* Github仓库:https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader
+* 更新日志: https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader#更新日志
+* Greasyfork: https://greasyfork.org/scripts/431344
+* Github仓库: https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader
 
 # 🔍参考截图
 * 从左往右(从上往下)依次为:推荐页、详情页、频道页、移动端分享页
@@ -117,6 +117,12 @@ A4:该视频为直播间而不是视频资源，无法下载
 ![移动端分享页](https://user-images.githubusercontent.com/87429695/131793226-9f7f02f6-ec68-4475-961e-eba5618987e7.png)
 
 # 📕更新日志
+<版本 1.18> 2021.10.15
+* 增加了当UA为pc时，对iesdouyin.com下detail页的支持
+* 增加了跳转功能，当UA从mobile切换至pc时，会提示是否转跳pc页
+* 修复了移动设备ua时，用户登录弹窗误屏蔽的问题
+* 优化了部分代码
+
 <版本 1.18> 2021.10.15
 * 优化代码
 * 修复了部分移动分享页无法下载的问题
