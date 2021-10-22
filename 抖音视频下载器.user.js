@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.19
+// @version      1.21
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等,移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
@@ -31,9 +31,9 @@
 				if (Url.search("www.iesdouyin.com/video/") !== -1) {
 					res = "detail";
 				} else if (Url.search("www.douyin.com") !== -1) {
-					if (location.pathname === "/") {
+					if (Url.search("/discover") !== -1) {
 						res = "home";
-					} else if (Url.search("/recommend") !== -1) {
+					} else if (location.pathname === "/") {
 						res = "recommend";
 					} else if (Url.search("/follow") !== -1) {
 						res = "follow";
@@ -59,6 +59,16 @@
 				res = "download";
 			}
 			return res;
+		},
+		videoID: function() {
+			var resID = false;
+			var videoObj = document.getElementsByTagName("video")[0];
+			if (videoObj) {
+				resID = videoObj.src;
+				resID = resID.slice(resID.search("douyinvod.com/") + "douyinvod.com/".length);
+				resID = resID.slice(0, resID.search("/"));
+			}
+			return resID;
 		}
 	}
 
@@ -126,31 +136,44 @@
 			}
 			a0.name = "newBtn";
 		},
-		swiper: function() {
-			var BtnList = document.getElementsByClassName("_240bd410e1956131036dfa3fa3b986d7-scss")[0];
-			document.getElementsByClassName("_240bd410e1956131036dfa3fa3b986d7-scss")[0]
-				.name =
-				"newBtnDownload";
-			var newBtn = BtnList.children[1].cloneNode(true);
-			var videoURL = document.getElementsByTagName("video")[0].src;
-			var pathLen = newBtn.children[0].children[0].children.length;
-			if (pathLen > 1) {
-				for (let i = 1; i < pathLen; i++) {
-					newBtn.children[0].children[0].children[i].style.display = "none";
+		swiper: {
+			create: function(BtnList) {
+				var newBtn = BtnList.children[1].cloneNode(true);
+				var pathLen = newBtn.children[0].children[0].children.length;
+				if (pathLen > 1) {
+					for (let i = 1; i < pathLen; i++) {
+						newBtn.children[0].children[0].children[i].style.display = "none";
+					}
+				}
+				newBtn.children[0].children[0].children[0].setAttribute("d",
+					"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
+				);
+				newBtn.children[1].innerHTML = "<a style='text-decoration : none'>下载</a>";
+				newBtn.onclick = function() {
+					document.getElementsByTagName('video')[0].pause();
+				}
+				var newBtnBox = document.createElement("div");
+				newBtnBox.setAttribute("class", "newBtnDownload");
+				newBtnBox.name = "";
+				newBtnBox.appendChild(newBtn);
+				BtnList.appendChild(newBtnBox);
+			},
+			change: function(BtnList, VideoID) {
+				var newBtnBox = BtnList.getElementsByClassName("newBtnDownload")[0];
+				if (newBtnBox) {
+					var newBtn = newBtnBox.children[0];
+					var videoURL = document.getElementsByTagName("video")[0];
+					if (videoURL) {
+						videoURL = videoURL.src;
+						newBtn.children[0].onclick = function() {
+							open(videoURL);
+						}
+						newBtn.children[1].innerHTML = "<a href=" + videoURL +
+							" style='text-decoration : none'>下载</a>";
+						newBtnBox.name = VideoID;
+					}
 				}
 			}
-			newBtn.children[0].children[0].children[0].setAttribute("d",
-				"M14 9h8v8h-8z M10 17L26 17 18 26z M7 26h22v2h-22z M7 22h2v4h-2z M27 22h2v4h-2z"
-			);
-			newBtn.children[1].innerHTML = "<a href=" + videoURL +
-				" style='text-decoration : none'>下载</a>";
-			newBtn.children[0].onclick = function() {
-				open(videoURL);
-			}
-			newBtn.onclick = function() {
-				document.getElementsByTagName('video')[0].pause();
-			}
-			BtnList.appendChild(newBtn);
 		},
 		video: function() {
 			if (!document.getElementById("newBtnDownload")) {
@@ -318,11 +341,15 @@
 			init.main();
 			Timer = setInterval(function() {
 				var BtnList = document.getElementsByClassName(
-					"_240bd410e1956131036dfa3fa3b986d7-scss")[0];
-				if (BtnList !== undefined) {
-					if (BtnList.name !== "newBtnDownload") {
-						if (BtnList.children[0] !== undefined) {
-							createBtn.swiper();
+					"_4ef2a9e6b21f82706ccd334207ae0269-scss");
+				var VideoID = check.videoID();
+				if (BtnList.length > 0) {
+					for (let i = 0; i < BtnList.length; i++) {
+						var newBtnBox = BtnList[i].getElementsByClassName("newBtnDownload")[0];
+						if (!newBtnBox) {
+							createBtn.swiper.create(BtnList[i]);
+						} else if (newBtnBox && newBtnBox.name !== VideoID) {
+							createBtn.swiper.change(BtnList[i], VideoID)
 						}
 					}
 				}
@@ -365,13 +392,13 @@
 		},
 		livedetail: function() {
 			init.main();
-			createBtn.live();
 			window.onload = function() {
+				createBtn.live();
 				var Btn = document.getElementById("relativeBtn");
 				if (Btn) {
 					if (Btn.innerText === "[ 隐藏 ]") {
 						Btn.click();
-						console.log("隐藏相关直播");
+						console.log("抖音视频下载器(" + Page + "页)启动,隐藏相关直播");
 					}
 				}
 			}
