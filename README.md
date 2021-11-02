@@ -67,7 +67,7 @@ A1:按照以下方法解决
 
 (4)使用Edge浏览器与Tampermonkey
 
-(5)如果都没用,按F12将控制台信息以及页面窗口截图通过greasyfork或github、gitee、邮箱发给我
+(5)如果都没用,按F12将控制台信息以及页面窗口截图通过Greasyfork/Github反馈给我
 
 <br>
 
