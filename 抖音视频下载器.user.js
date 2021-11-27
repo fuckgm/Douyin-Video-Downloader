@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.24
+// @version      1.25
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等,移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
 // @include      *://*.iesdouyin.com/*
+// @include      *://*.zjcdn.com/*
 // @icon         https://s3.bmp.ovh/imgs/2021/08/63899211b3595b11.png
 // ==/UserScript==
 
@@ -59,6 +60,46 @@
 				res = "download";
 			}
 			return res;
+		},
+		name: function(type, pareObj) {
+			if (!pareObj) {
+				pareObj = document;
+			}
+			var res0, res1; //0:author,1:title
+			switch (type) {
+				case "share":
+					res0 = pareObj.getElementsByClassName("author-name").children[0];
+					res1 = pareObj.getElementsByClassName("desc")[0];
+					break;
+				case "list":
+					res0 = pareObj.children[2].children[0];
+					res1 = pareObj.children[1];
+					break;
+				case "swiper":
+					res0 = pareObj.getElementsByClassName("mzZanXbP")[0];
+					res1 = pareObj.getElementsByClassName("title")[0];
+					break;
+				case "video":
+					res0 = pareObj.getElementsByClassName("mzZanXbP")[0];
+					res1 = pareObj.getElementsByClassName("AQHQ2slR")[0];
+					break;
+				default:
+					break;
+			}
+			if (!res0 || !res1) {
+				return "";
+			}
+			res0 = res0.innerText.replace(/(^\s*)|(\s*$)/g, "");
+			res1 = res1.innerText.replace(/(^\s*)|(\s*$)/g, "").slice(0, 30); //限制在30个字符内
+			return res1 + "@" + res0;
+		},
+		download: function(url, name) {
+			if (name) {
+				return encodeURI(url + "&video-name=" + name);
+			} else {
+				return decodeURI(url).split("&video-name=");
+
+			}
 		}
 	}
 
@@ -70,7 +111,8 @@
 				if (OldTittle && VideoObj) {
 					var NewTittle = OldTittle.cloneNode(true);
 					var VideoUrl = VideoObj.src.replace("playwm", "play");
-					var OriginHTML = NewTittle.innerHTML;
+					VideoUrl = check.download(VideoUrl, check.name("share"));
+					var OriginHTML = "<span>" + NewTittle.innerHTML + "</span>";
 					var BtnHtml = "<a href=" + VideoUrl +
 						"target='_blank' style='text-decoration: none;'><span style='font-size: 0.34667rem;line-height: 0.48rem;margin-bottom: 0.10667rem;color: rgba(255,255,255,0.9);border:2px solid rgba(255,255,255,0.9);border-radius: 4px;cursor:pointer;'>点击下载</span></a>";
 					NewTittle.innerHTML = OriginHTML + "   " + BtnHtml;
@@ -106,6 +148,7 @@
 				a02.style = "text-align: left;";
 				a0.appendChild(a02);
 			} else {
+				var UrlAnnexe = check.name("list", a0.parentElement);
 				a02.innerHTML =
 					"<svg xmlns='http://www.w3.org/2000/svg' version='1.1' style='width:32px;height:32px; cursor: pointer;margin-left:5px;' fill='rgba(47,48,53,.4)'><path d='M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z' /></svg>";
 				var a020 = a02.children[0];
@@ -116,7 +159,7 @@
 					a020.setAttribute("fill", "rgba(47,48,53,.4)");
 				}
 				a02.onclick = function() {
-					open(VideoUrl);
+					open(check.download(VideoUrl, UrlAnnexe));
 				}
 				a0.insertBefore(a02, a01);
 			}
@@ -143,16 +186,16 @@
 				newBtnBox.appendChild(newBtn);
 				BtnList.appendChild(newBtnBox);
 			},
-			change: function(BtnList, videoURL) {
+			change: function(BtnList, videoURL, presentObj) {
 				var newBtnBox = BtnList.getElementsByClassName("newBtnDownload")[0];
 				if (newBtnBox) {
 					var newBtn = newBtnBox.children[0];
 					if (videoURL) {
-						console.log(videoURL);
+						var newVideoURL = check.download(videoURL, check.name("swiper"), presentObj);
 						newBtn.children[0].onclick = function() {
-							open(videoURL);
+							open(newVideoURL);
 						}
-						newBtn.children[1].innerHTML = "<a href=" + videoURL +
+						newBtn.children[1].innerHTML = "<a href=" + newVideoURL +
 							" style='text-decoration : none'>下载</a>";
 						newBtn.setAttribute("data-src", videoURL);
 					}
@@ -164,6 +207,8 @@
 				var videoURL = document.getElementsByTagName("video")[0];
 				if (videoURL) {
 					videoURL = videoURL.getElementsByTagName("source")[0].src;
+					videoURL = check.download(videoURL, check.name("video"));
+					console.log(videoURL);
 					var newBtn = BtnList.children[2].cloneNode(true);
 					newBtn.setAttribute("id", "newBtnDownload");
 					newBtn.children[0].children[0].setAttribute("d",
@@ -356,20 +401,20 @@
 		},
 		recommend: function() {
 			init.main();
+			var BtnList, newBtnBox, presentObj, videoURL, btnObj;
 			Timer = setInterval(function() {
-				var BtnList = document.getElementsByClassName("TvKp5rIf")[0];
+				BtnList = document.getElementsByClassName("TvKp5rIf")[0];
 				if (BtnList) {
-					var newBtnBox = BtnList.getElementsByClassName("newBtnDownload")[0];
+					newBtnBox = BtnList.getElementsByClassName("newBtnDownload")[0];
 					if (!newBtnBox) {
 						createBtn.swiper.create(BtnList);
 					} else {
-						var videoURL = document.getElementsByTagName("video")[0];
-						if (videoURL) {
-							videoURL = videoURL.getElementsByTagName("source")[0].src;
-							var btnObj = newBtnBox.children[0];
-							if (btnObj.getAttribute("data-src") !== videoURL) {
-								createBtn.swiper.change(BtnList, videoURL);
-							}
+						btnObj = newBtnBox.children[0];
+						presentObj = document.getElementsByClassName(
+							"swiper-slide _79rCAeWZ swiper-slide-active")[0];
+						videoURL = presentObj.getElementsByTagName("video")[0].children[0].src;
+						if (videoURL && btnObj.getAttribute("data-src") !== videoURL) {
+							createBtn.swiper.change(BtnList, videoURL, presentObj);
 						}
 					}
 				}
@@ -426,12 +471,10 @@
 			init.main();
 			var videoOBJ = document.getElementsByTagName('video')[0];
 			videoOBJ.pause();
-			var videoURL = location.href;
-			var videoID = videoURL.slice(videoURL.search("tos-cn-ve-15/") + "tos-cn-ve-15/".length);
-			videoID = videoID.slice(0, videoID.search("/"));
+			var data = check.download(location.href);
 			var a = document.createElement("a");
-			a.href = videoURL;
-			a.download = videoID + ".mp4";
+			a.href = data[0];
+			a.download = (data[1] ? data[1] : "抖音无水印视频") + ".mp4";
 			a.click();
 		},
 		match: function() {
