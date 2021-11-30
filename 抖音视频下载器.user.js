@@ -281,41 +281,41 @@
 			}
 		},
 		live: function() {
-			var list={
-				"searchBar":{
-					"class":"BJUkFEKo",
-					"extarEvent":null
+			var list = {
+				"searchBar": {
+					"class": "BJUkFEKo",
+					"extarEvent": null
 				},
-				"liveCategory":{
-					"class":"l0I0l5H4",
-					"extarEvent":null
+				"liveCategory": {
+					"class": "l0I0l5H4",
+					"extarEvent": null
 				},
-				"relativeLive":{
-					"class":"_3zMWm4HT",
-					"extarEvent":null
+				"relativeLive": {
+					"class": "_3zMWm4HT",
+					"extarEvent": null
 				},
-				"buttomMessage":{
-					"class":"HPcNXBOf",
-					"extarEvent":null
+				"buttomMessage": {
+					"class": "HPcNXBOf",
+					"extarEvent": null
 				},
-				"chatWindow":{
-					"class":"ojIOhXDJ",
-					"extraEvent":function(state){
-						var livePlayer=document.getElementsByClassName("Jf1GlewW")[0];
-						if(!livePlayer){
+				"chatWindow": {
+					"class": "ojIOhXDJ",
+					"extraEvent": function(state) {
+						var livePlayer = document.getElementsByClassName("Jf1GlewW")[0];
+						if (!livePlayer) {
 							console.log("找不到直播播放器");
 							return false;
 						}
-						if(state==="on"){
-							livePlayer.style.margin="auto";
-						}else{
-							livePlayer.style.margin="";
+						if (state === "on") {
+							livePlayer.style.margin = "auto";
+						} else {
+							livePlayer.style.margin = "";
 						}
 					}
 				},
-				"edgeTool":{
-					"class":"ohjo+Xk3",
-					"extarEvent":null
+				"edgeTool": {
+					"class": "ohjo+Xk3",
+					"extarEvent": null
 				},
 			};
 			if (!document.getElementById("undisturbWatchBtn")) {
@@ -337,10 +337,10 @@
 						this.style.color = "";
 					}
 					var setData = set.get("hideList"),
-						target,extraEvernt;
+						target, extraEvernt;
 					for (let i in setData) {
 						target = false;
-						extraEvernt=false;
+						extraEvernt = false;
 						if (setData[i] && list[i]) {
 							target = document.getElementsByClassName(list[i].class)[0];
 							if (target) {
@@ -351,7 +351,7 @@
 								}
 							}
 							console.log(list[i].extraEvent)
-							if(typeof list[i].extraEvent==="function"){
+							if (typeof list[i].extraEvent === "function") {
 								list[i].extraEvent(state);
 							}
 						}
@@ -721,7 +721,7 @@
 					"liveCategory": true,
 					"relativeLive": true,
 					"buttomMessage": true,
-					"chatWindow":false,
+					"chatWindow": false,
 					"edgeTool": false
 				}
 			}
@@ -991,7 +991,7 @@
 				var choice = data.value;
 				var choiceValue = set.get(data.key);
 				var choiceHtml =
-					"<select style='width: 100%;color: var(--color-text-0-hover);border-color: var(--color-text-0-hover);background: var(--color-bg-1);'>";
+					"<select style='width: 100%;color: var(--color-text-0-hover);border-color: var(--color-text-0-hover);background: var(--color-page-bg);'>";
 				for (let i in choice) {
 					choiceHtml += "<option choice-key='" + choice[i].key + "'";
 					if (choiceValue === choice[i].key) {
