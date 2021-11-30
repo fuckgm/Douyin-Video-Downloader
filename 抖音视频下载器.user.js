@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.27
+// @version      1.28
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等,移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
@@ -195,22 +195,22 @@
 			}
 			var a01 = a0.children[1];
 			var a02 = document.createElement("span");
+			a02.innerHTML =
+				"<svg xmlns='http://www.w3.org/2000/svg' version='1.1' style='width:32px;height:32px; cursor: pointer;margin-left:5px;' fill='var(--color-text-1)' fill-opacity='0.4'><path d='M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z' /></svg>";
+			var a020 = a02.children[0];
+			a020.onmouseover = function() {
+				a020.setAttribute("fill-opacity", "1");
+			};
+			a020.onmouseleave = function() {
+				a020.setAttribute("fill-opacity", "0.4");
+			}
 			if (a01 === undefined) {
-				a02.innerHTML =
-					"<svg xmlns='http://www.w3.org/2000/svg' version='1.1' style='width:32px;height:32px; cursor: not-allowed;margin-left:5px;' fill='rgba(47,48,53,.4)'><path d='M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z' /></svg>";
-				a02.style = "text-align: left;";
+				a02.onclick = function() {
+					alert("当前项为直播间，暂时无法在列表中提取真实推流地址。请先进入直播间再提取地址");
+				}
 				a0.appendChild(a02);
 			} else {
 				var UrlAnnexe = tools.videoName("list", a0.parentElement);
-				a02.innerHTML =
-					"<svg xmlns='http://www.w3.org/2000/svg' version='1.1' style='width:32px;height:32px; cursor: pointer;margin-left:5px;' fill='rgba(47,48,53,.4)'><path d='M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z' /></svg>";
-				var a020 = a02.children[0];
-				a020.onmouseover = function() {
-					a020.setAttribute("fill", "rgba(47,48,53,.9)");
-				};
-				a020.onmouseleave = function() {
-					a020.setAttribute("fill", "rgba(47,48,53,.4)");
-				}
 				a02.onclick = function() {
 					open(tools.downloadLink(VideoUrl, UrlAnnexe));
 				}
@@ -280,87 +280,124 @@
 				}
 			}
 		},
-		live: function() {
-			var list = {
-				"searchBar": {
-					"class": "BJUkFEKo",
-					"extarEvent": null
-				},
-				"liveCategory": {
-					"class": "l0I0l5H4",
-					"extarEvent": null
-				},
-				"relativeLive": {
-					"class": "_3zMWm4HT",
-					"extarEvent": null
-				},
-				"buttomMessage": {
-					"class": "HPcNXBOf",
-					"extarEvent": null
-				},
-				"chatWindow": {
-					"class": "ojIOhXDJ",
-					"extraEvent": function(state) {
-						var livePlayer = document.getElementsByClassName("Jf1GlewW")[0];
-						if (!livePlayer) {
-							console.log("找不到直播播放器");
-							return false;
+		live: {
+			create: function(name, id, logo, event, attribute) {
+				var btn = document.createElement("button");
+				btn.setAttribute("class", "VPz4-306");
+				btn.style.margin = "0 0 0 8px";
+				btn.innerHTML = logo + "<span>" + name + "</span>";
+				btn.id = id;
+				for (let i in event) {
+					btn.addEventListener(i, event[i]);
+				}
+				for (let i in attribute) {
+					btn.setAttribute(i, attribute[i]);
+				}
+				return btn;
+			},
+			undisturb: function() {
+				var list = {
+					"searchBar": {
+						"class": "BJUkFEKo",
+						"extarEvent": null
+					},
+					"liveCategory": {
+						"class": "l0I0l5H4",
+						"extarEvent": null
+					},
+					"relativeLive": {
+						"class": "_3zMWm4HT",
+						"extarEvent": null
+					},
+					"buttomMessage": {
+						"class": "HPcNXBOf",
+						"extarEvent": null
+					},
+					"chatWindow": {
+						"class": "ojIOhXDJ",
+						"extraEvent": function(state) {
+							var livePlayer = document.getElementsByClassName("Jf1GlewW")[0];
+							if (!livePlayer) {
+								console.log("找不到直播播放器");
+								return false;
+							}
+							if (state === "on") {
+								livePlayer.style.margin = "auto";
+							} else {
+								livePlayer.style.margin = "";
+							}
 						}
-						if (state === "on") {
-							livePlayer.style.margin = "auto";
+					},
+					"edgeTool": {
+						"class": "ohjo+Xk3",
+						"extarEvent": null
+					},
+				};
+				var event = {
+					"click": function() {
+						var state = this.getAttribute("state-data");
+						if (state === "off") {
+							state = "on";
+							this.style.background = "var(--color-primary)";
+							this.style.color = "var(--color-anti-white)";
 						} else {
-							livePlayer.style.margin = "";
+							state = "off";
+							this.style.background = "";
+							this.style.color = "";
 						}
-					}
-				},
-				"edgeTool": {
-					"class": "ohjo+Xk3",
-					"extarEvent": null
-				},
-			};
-			if (!document.getElementById("undisturbWatchBtn")) {
-				var undisturbWatchBtn = document.createElement("button");
-				undisturbWatchBtn.setAttribute("class", "VPz4-306");
-				undisturbWatchBtn.style.margin = "0 0 0 8px";
-				undisturbWatchBtn.innerText = "沉浸式观看";
-				undisturbWatchBtn.id = "undisturbWatchBtn";
-				undisturbWatchBtn.setAttribute("state-data", "off");
-				undisturbWatchBtn.onclick = function() {
-					var state = this.getAttribute("state-data");
-					if (state === "off") {
-						state = "on";
-						this.style.background = "var(--color-primary)";
-						this.style.color = "var(--color-anti-white)";
-					} else {
-						state = "off";
-						this.style.background = "";
-						this.style.color = "";
-					}
-					var setData = set.get("hideList"),
-						target, extraEvernt;
-					for (let i in setData) {
-						target = false;
-						extraEvernt = false;
-						if (setData[i] && list[i]) {
-							target = document.getElementsByClassName(list[i].class)[0];
-							if (target) {
-								if (state === "on") {
-									target.style.display = "none";
-								} else {
-									target.style.display = "";
+						var setData = set.get("hideList"),
+							target, extraEvernt;
+						for (let i in setData) {
+							target = false;
+							extraEvernt = false;
+							if (setData[i] && list[i]) {
+								target = document.getElementsByClassName(list[i].class)[0];
+								if (target) {
+									if (state === "on") {
+										target.style.display = "none";
+									} else {
+										target.style.display = "";
+									}
+								}
+								console.log(list[i].extraEvent)
+								if (typeof list[i].extraEvent === "function") {
+									list[i].extraEvent(state);
 								}
 							}
-							console.log(list[i].extraEvent)
-							if (typeof list[i].extraEvent === "function") {
-								list[i].extraEvent(state);
-							}
 						}
+						this.setAttribute("state-data", state);
+						console.log("沉浸式观看:" + state);
 					}
-					this.setAttribute("state-data", state);
-					console.log("沉浸式观看:" + state);
 				}
-				var beforeBtn = document.getElementsByClassName("VPz4-306")[0];
-				beforeBtn.parentElement.insertBefore(undisturbWatchBtn, beforeBtn);
+				var attribute = {
+					"state-data": "off",
+					"title": "沉浸式观看模式:屏蔽不必要的窗口从而提高观看体验。按钮红色亮起表示已启动，非红色表示已关闭"
+				}
+				var btn = this.create("沉浸观看", "undisturbWatchBtn", "", event, attribute);
+				return btn;
+			},
+			download: function() {
+				var logo =
+					"<svg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg' class='_5AZvPWVz'><path fill-rule='evenodd' clip-rule='evenodd' d='M5 1L10 1L10 7L12 7L8 11L8 12L13 12L13 9L14 9L14 13L1 13L1 9L2 9L2 12L7 12L7 11L3 7L5 7z' fill='#2F3035'></path></svg>";
+				var event = {
+					"click": function() {
+						var data = document.getElementById("RENDER_DATA").innerText;
+						data = JSON.parse(decodeURIComponent(data));
+						data = data.initialState.roomStore.roomInfo.room.stream_url.hls_pull_url;
+						var exportBox = document.createElement("input");
+						exportBox.value = data;
+						document.body.appendChild(exportBox);
+						exportBox.select();
+						document.execCommand('copy');
+						exportBox.remove();
+						alert("抖音真实地址已导出到剪贴板");
+					}
+				}
+				var attribute = {
+					"title": "点击提取抖音直播真实推流地址"
+				}
+				var btn = this.create("提取地址", "newBtnDownload", logo, event, attribute);
+				return btn;
 			}
 		},
 		set: function() {
@@ -380,14 +417,20 @@
 			btn.style =
 				"align-items:center;background-color: var(--color-bg-1);border-radius: 18px;bottom: 0;box-shadow: var(--shadow-2);cursor: pointer;display: flex;font-size: 0;height: 36px;justify-content: center;margin-top: 8px;width: 36px;";
 			btn.innerHTML =
-				"<svg width=\"32\" height=\"32\" fill=\"var(--color-text-3)\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 36 36\" style=\"color: var(--color-text-3);\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M18.051782472841584,8.307068007308498 C12.516707606894524,8.307068007308498 8.029759537538956,12.794016076664168 8.029759537538956,18.329090942611256 C8.029759537538956,23.864165808558244 12.516707606894524,28.35111387791388 18.051782472841584,28.35111387791388 C23.586857338788583,28.35111387791388 28.073805408144114,23.864165808558244 28.073805408144114,18.329090942611256 C28.073805408144114,12.794016076664168 23.586857338788583,8.307068007308498 18.051782472841584,8.307068007308498 zM23.834408338773077,17.61746801229386 C22.83386098228989,18.76833881723545 21.278909714978113,19.148974338102818 19.914276208100574,18.711105577684705 L14.95773975158758,24.41098459125365 C14.429539010673908,25.017794841911893 13.510359392347201,25.079854981183725 12.903549141689044,24.552343797372888 S12.232610080449827,23.104963438132547 12.760121264260935,22.49815318747435 L17.723553291803697,16.792068159978093 C17.10777879880622,15.50604416284459 17.27051427511903,13.92075238300005 18.266234731880896,12.776087591985577 C19.208859291710244,11.690035154728026 20.647275408611392,11.292850263388228 21.953986118835438,11.621769001528975 L20.054945857116607,13.836626416431487 L20.676236806938302,15.643955583448678 L22.55321124136052,16.00873129094669 L24.457078402800576,13.788357419219931 C24.97286711586004,15.03921400409958 24.78323891252938,16.527278232418247 23.834408338773077,17.61746801229386 z\"></path></svg>";
+				"<svg width='32' height='32' fill='var(--color-text-3)' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' style='color: var(--color-text-3);'><path fill-rule='evenodd' clip-rule='evenodd' d='M18.051782472841584,8.307068007308498 C12.516707606894524,8.307068007308498 8.029759537538956,12.794016076664168 8.029759537538956,18.329090942611256 C8.029759537538956,23.864165808558244 12.516707606894524,28.35111387791388 18.051782472841584,28.35111387791388 C23.586857338788583,28.35111387791388 28.073805408144114,23.864165808558244 28.073805408144114,18.329090942611256 C28.073805408144114,12.794016076664168 23.586857338788583,8.307068007308498 18.051782472841584,8.307068007308498 zM23.834408338773077,17.61746801229386 C22.83386098228989,18.76833881723545 21.278909714978113,19.148974338102818 19.914276208100574,18.711105577684705 L14.95773975158758,24.41098459125365 C14.429539010673908,25.017794841911893 13.510359392347201,25.079854981183725 12.903549141689044,24.552343797372888 S12.232610080449827,23.104963438132547 12.760121264260935,22.49815318747435 L17.723553291803697,16.792068159978093 C17.10777879880622,15.50604416284459 17.27051427511903,13.92075238300005 18.266234731880896,12.776087591985577 C19.208859291710244,11.690035154728026 20.647275408611392,11.292850263388228 21.953986118835438,11.621769001528975 L20.054945857116607,13.836626416431487 L20.676236806938302,15.643955583448678 L22.55321124136052,16.00873129094669 L24.457078402800576,13.788357419219931 C24.97286711586004,15.03921400409958 24.78323891252938,16.527278232418247 23.834408338773077,17.61746801229386 z'></path></svg>";
 			btn.onclick = function() {
 				if (document.getElementById("downloaderSettingPage")) {
 					set.close();
 				} else {
 					set.create()
 				}
-			};
+			}
+			btn.onmouseover = function() {
+				btn.children[0].setAttribute("fill", "var(--color-text-1)");
+			}
+			btn.onmouseleave = function() {
+				btn.children[0].setAttribute("fill", "var(--color-text-3)");
+			}
 			box.appendChild(btn);
 		}
 	};
@@ -552,7 +595,11 @@
 		livedetail: function() {
 			init.main();
 			window.onload = function() {
-				createBtn.live();
+				var beforeBtn = document.getElementsByClassName("VPz4-306")[0];
+				var undisturbWatchBtn = createBtn.live.undisturb();
+				var downloadBtn = createBtn.live.download();
+				beforeBtn.parentElement.insertBefore(undisturbWatchBtn, beforeBtn);
+				beforeBtn.parentElement.insertBefore(downloadBtn, beforeBtn);
 				init.live();
 				console.log("抖音视频下载器(" + Page + "页)启动");
 			}
@@ -732,7 +779,7 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.27"
+					"value": "v1.28"
 				}, {
 					"name": "视频文件名",
 					"type": "choice",
@@ -780,9 +827,9 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.27"
+					"value": "v1.28"
 				}, {
-					"name": "沉浸式观看",
+					"name": "沉浸观看",
 					"type": "choice",
 					"key": "undisturbWatch",
 					"value": [{
@@ -801,7 +848,7 @@
 					"value": [{
 						"name": "顶部搜索",
 						"key": "searchBar",
-						"description": "位于页面顶部的搜索栏、抖音LOGO以及登录图标等"
+						"description": "位于页面顶部的抖音LOGO、搜索栏、登录图标等"
 					}, {
 						"name": "直播分类",
 						"key": "liveCategory",
@@ -809,11 +856,11 @@
 					}, {
 						"name": "相关直播",
 						"key": "relativeLive",
-						"description": "位于页面底部的相关直播栏"
+						"description": "位于页面底部的相关直播模块"
 					}, {
 						"name": "底部信息",
 						"key": "buttomMessage",
-						"description": "位于页面底部的介绍信息栏"
+						"description": "位于页面底部的网站信息、相关链接等"
 					}, {
 						"name": "聊天窗口",
 						"key": "chatWindow",
@@ -934,7 +981,7 @@
 			page.style = "width:" + pageWidth + "px;height:" + pageHeight +
 				"px;position:fixed;left:" +
 				pageLeft + "px;top:" + pageTop +
-				"px;background:var(--color-page-bg);border-radius:20px;font-size:14px;color:var(--color-text-0-hover);";
+				"px;background:var(--color-page-bg);border-radius:20px;font-size:14px;color:var(--color-text-0-hover);border:3px solid var(--color-navigation-bg);z-index:999;";
 			box.style =
 				"width:calc(100% - 40px);height:calc(100% - 40px);margin:20px;";
 			box.appendChild(set.createHead());
@@ -960,8 +1007,9 @@
 				body.appendChild(this.createOpt(data[i]));
 			}
 			var msg = document.createElement("div");
-			msg.innerHTML = "更多功能，请关注后续版本！<br>欢迎大家在“油叉”或“gayhub”上反馈建议。";
-			msg.style = "color:red;"
+			msg.innerHTML =
+				"更多功能，请关注后续版本！<br>欢迎大家在“<a href='https://greasyfork.org/zh-CN/scripts/431344' target='_blank'>油叉</a>”或“<a href='https://github.com/IcedWatermelonJuice/Douyin-Video-Downloader' target='_blank'>gayhub</a>”上反馈建议。";
+			msg.style = "color:red;text-decoration:none;";
 			body.appendChild(msg);
 			return body;
 		},
@@ -1011,13 +1059,12 @@
 				var checkHtml =
 					"<form style='width: 100%;color: var(--color-text-0-hover);'>";
 				for (let i in check) {
-					checkHtml += "<div style='display:inline-block;'><input type='checkbox' value='" +
-						check[i].key + "'";
+					checkHtml += "<div style='display:inline-block;margin-right:5px;' title='" + check[i]
+						.description + "'><input type='checkbox' value='" + check[i].key + "'";
 					if (checkValue[check[i].key]) {
 						checkHtml += " checked='checked'";
 					}
-					checkHtml += " title='" + check[i].description + "'><span>" + check[i].name +
-						"</span></div>";
+					checkHtml += "><span>" + check[i].name + "</span></div>";
 				}
 				checkHtml += "</form>";
 				content.innerHTML = checkHtml;
