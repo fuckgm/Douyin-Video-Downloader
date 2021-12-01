@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.28
+// @version      1.29
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等,移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
@@ -299,19 +299,31 @@
 				var list = {
 					"searchBar": {
 						"class": "BJUkFEKo",
-						"extarEvent": null
+						"extraEvent": function(state) {
+							var liveCategory = document.getElementsByClassName("xWQs9nlt KpjwjEYL")[
+								0];
+							if (!liveCategory) {
+								console.log("直播分类模块丢失");
+								return false;
+							}
+							if (state === "on") {
+								liveCategory.style.top = "0";
+							} else {
+								liveCategory.style.top = "";
+							}
+						}
 					},
 					"liveCategory": {
 						"class": "l0I0l5H4",
-						"extarEvent": null
+						"extraEvent": null
 					},
 					"relativeLive": {
 						"class": "_3zMWm4HT",
-						"extarEvent": null
+						"extraEvent": null
 					},
 					"buttomMessage": {
 						"class": "HPcNXBOf",
-						"extarEvent": null
+						"extraEvent": null
 					},
 					"chatWindow": {
 						"class": "ojIOhXDJ",
@@ -330,7 +342,7 @@
 					},
 					"edgeTool": {
 						"class": "ohjo+Xk3",
-						"extarEvent": null
+						"extraEvent": null
 					},
 				};
 				var event = {
@@ -346,12 +358,13 @@
 							this.style.color = "";
 						}
 						var setData = set.get("hideList"),
-							target, extraEvernt;
+							target, extraEvent;
 						for (let i in setData) {
 							target = false;
-							extraEvernt = false;
+							extraEvent = false;
 							if (setData[i] && list[i]) {
 								target = document.getElementsByClassName(list[i].class)[0];
+								extraEvent = list[i].extraEvent;
 								if (target) {
 									if (state === "on") {
 										target.style.display = "none";
@@ -359,9 +372,8 @@
 										target.style.display = "";
 									}
 								}
-								console.log(list[i].extraEvent)
-								if (typeof list[i].extraEvent === "function") {
-									list[i].extraEvent(state);
+								if (typeof extraEvent === "function") {
+									extraEvent(state);
 								}
 							}
 						}
@@ -383,14 +395,27 @@
 					"click": function() {
 						var data = document.getElementById("RENDER_DATA").innerText;
 						data = JSON.parse(decodeURIComponent(data));
-						data = data.initialState.roomStore.roomInfo.room.stream_url.hls_pull_url;
-						var exportBox = document.createElement("input");
-						exportBox.value = data;
-						document.body.appendChild(exportBox);
-						exportBox.select();
-						document.execCommand('copy');
-						exportBox.remove();
-						alert("抖音真实地址已导出到剪贴板");
+						data = data.initialState.roomStore.roomInfo.room.stream_url;
+						switch (set.get("download")) {
+							case "m3u8":
+								data = data.hls_pull_url_map["FULL_HD1"];
+								break;
+							case "flv":
+								data = data.flv_pull_url["FULL_HD1"];
+								break;
+							default:
+								data = data.hls_pull_url;
+								break;
+						}
+						if (data && typeof data === "string") {
+							var exportBox = document.createElement("input");
+							exportBox.value = data;
+							document.body.appendChild(exportBox);
+							exportBox.select();
+							document.execCommand('copy');
+							exportBox.remove();
+							alert("抖音真实推流地址已导出到剪贴板");
+						}
 					}
 				}
 				var attribute = {
@@ -446,26 +471,29 @@
 			}
 		},
 		clickFn: function() {
-			loginPopupFlag = false;
+			loginPopupFlag = "wait";
 			console.log("用户登录中...");
 		},
 		login: function() {
-			var ClassArray = [
-				"abace09bde29f9d2077ba2a9e9e2b67d-scss _93fbc55b0dd6667bca4858426fd34dde-scss _14339689bca6b9eda19c146a14df625e-scss _7ecaa8ba84de53f8bea1cb4996e405a7-scss _8466f1adbc57d0978d0ac366e59ed9a7-scss",
-				"bed9a6c25b644fe7083f8daf4da9574b-scss _7da806a86cca87e85c2238c842716b35-scss _981181df75601f4772116d77f7b11bc3-scss d137d3747225da4f801767811d7104db-scss _1e88f2ef9e8486fae5ffe34156b1ded4-scss"
+			var ClassArray = ["SSV0NEur", "tk3nuzSi", "wlsrobSg", "OPE8io-h", "ib4UcBI5",
+				"q6zgm94p k-vFWw3W FDOWibym scan__button",
+				"q6zgm94p k-vFWw3W FDOWibym video-comment-high__contain__btn"
 			];
+			var BtnArray = [];
 			var LoginBtnArray, LoginBtn;
 			for (let i = 0; i < ClassArray.length; i++) {
 				LoginBtnArray = document.getElementsByClassName(ClassArray[i]);
 				if (LoginBtnArray[0]) {
-					break;
+					BtnArray.push(ClassArray[i]);
 				}
 			}
-			for (let i = 0; i < LoginBtnArray.length; i++) {
-				LoginBtn = LoginBtnArray[i];
-				if (LoginBtn && LoginBtn.name !== "newLoginBtn") {
-					LoginBtn.addEventListener("click", init.clickFn);
-					LoginBtn.name = "newLoginBtn";
+			for (let i = 0; i < BtnArray.length; i++) {
+				LoginBtn = document.getElementsByClassName(BtnArray[i]);
+				for (let j = 0; j < LoginBtn.length; j++) {
+					if (LoginBtn[j] && LoginBtn[j].name !== "newLoginBtn") {
+						LoginBtn[j].addEventListener("click", init.clickFn);
+						LoginBtn[j].name = "newLoginBtn";
+					}
 				}
 			}
 		},
@@ -550,7 +578,13 @@
 						btnObj = newBtnBox.children[0];
 						presentObj = document.getElementsByClassName(
 							"swiper-slide _79rCAeWZ swiper-slide-active")[0];
-						videoURL = presentObj.getElementsByTagName("video")[0].children[0].src;
+						try {
+							videoURL = presentObj.getElementsByTagName("video")[0];
+							videoURL = videoURL.children[0].src;
+						} catch (e) {
+							videoURL = false;
+							console.log("找不到videoURL");
+						}
 						if (videoURL && btnObj.getAttribute("data-src") !== videoURL) {
 							createBtn.swiper.change(BtnList, videoURL, presentObj);
 						}
@@ -629,49 +663,60 @@
 					createBtn.set();
 					init.edge();
 					this.home();
+					this.judge();
 					break;
 				case "recommend":
 					set.init();
 					createBtn.set();
 					init.edge();
 					this.recommend();
+					this.judge();
 					break;
 				case "follow":
 					set.init();
 					createBtn.set();
 					init.edge();
 					this.follow();
+					this.judge();
 					break;
 				case "hot":
 					set.init();
 					createBtn.set();
 					init.edge();
 					this.hot();
+					this.judge();
 					break;
 				case "channel":
 					set.init();
 					createBtn.set();
 					init.edge();
 					this.channel();
+					this.judge();
 					break;
 				case "detail":
 					set.init();
 					createBtn.set();
 					this.detail();
+					this.judge();
 					break;
 				case "search":
 					set.init();
 					createBtn.set();
 					this.search();
+					this.judge();
 					break;
 				case "livehome":
+					set.init("live");
+					createBtn.set();
 					init.edge();
 					this.livehome();
+					this.judge();
 					break;
 				case "livedetail":
 					set.init("live");
 					createBtn.set();
 					this.livedetail();
+					this.judge();
 					break;
 				case "download":
 					this.download();
@@ -695,13 +740,13 @@
 					HideNum += 1;
 				}
 			}
-			//登录弹窗，不能无脑屏蔽，需要考虑情况
+			//登录弹窗，不能无脑屏蔽，需要考虑情况		
 			try {
 				PopObj = document.getElementById("login-pannel").parentElement.parentElement;
 			} catch (e) {
 				PopObj = false;
 			}
-			if (loginPopupFlag) {
+			if (loginPopupFlag === true) {
 				if (PopObj && PopObj.style.display !== "none") {
 					PopObj.style.display = "none";
 					HideNum += 1;
@@ -710,16 +755,10 @@
 				if (PopObj && PopObj.style.display === "none") {
 					PopObj.style.display = "";
 				}
-				if (PopObj === false) {
+				if (!PopObj && loginPopupFlag === "wait") {
 					loginPopupFlag = true;
 					console.log("用户取消登录或登录成功");
 				}
-			}
-			//不登陆看评论的弹窗
-			try {
-				PopObj = document.getElementById("login-pannel").parentElement.parentElement;
-			} catch (e) {
-				PopObj = false;
 			}
 			//控制台输出相关信息
 			if (HideNum > 0) {
@@ -751,6 +790,24 @@
 					}
 				}
 			}
+		},
+		judge: function() {
+			switch (set.get("loginPopup")) {
+				case "auto":
+					if (currentPage === "follow") {
+						loginPopupFlag = false;
+					} else {
+						loginPopupFlag = true;
+						init.login();
+					}
+					break;
+				case "hide":
+					loginPopupFlag = true;
+					break;
+				case "display":
+					loginPopupFlag = false;
+					break;
+			}
 		}
 	}
 
@@ -759,7 +816,8 @@
 			"video": {
 				"fileName": "whole",
 				"diyFileName": "",
-				"download": "auto"
+				"download": "auto",
+				"loginPopup": "auto"
 			},
 			"live": {
 				"undisturbWatch": "manual",
@@ -770,7 +828,9 @@
 					"buttomMessage": true,
 					"chatWindow": false,
 					"edgeTool": false
-				}
+				},
+				"loginPopup": "auto",
+				"download": "default"
 			}
 		},
 		baseOpt: {
@@ -779,7 +839,7 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.28"
+					"value": "v1.29"
 				}, {
 					"name": "视频文件名",
 					"type": "choice",
@@ -811,6 +871,23 @@
 						"description": "需手动下载视频，且手动下载模式下，将关闭自动重命名。下载时需手动更改文件名"
 					}]
 				}, {
+					"name": "登录弹窗",
+					"type": "choice",
+					"key": "loginPopup",
+					"value": [{
+						"name": "自动管理",
+						"key": "auto",
+						"description": "自动识别场景，根据不同场合选择是否屏蔽登录弹窗"
+					}, {
+						"name": "直接屏蔽",
+						"key": "hide",
+						"description": "遇到登录弹窗，直接屏蔽"
+					}, {
+						"name": "不屏蔽",
+						"key": "display",
+						"description": "遇到登录弹窗，不进行任何操作"
+					}]
+				}, {
 					"name": "反馈建议",
 					"type": "text",
 					"key": "feedback",
@@ -827,7 +904,7 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.28"
+					"value": "v1.29"
 				}, {
 					"name": "沉浸观看",
 					"type": "choice",
@@ -869,6 +946,40 @@
 						"name": "侧边工具",
 						"key": "edgeTool",
 						"description": "位于页面右下角的工具栏（包括脚本设置入口）"
+					}]
+				}, {
+					"name": "登录弹窗",
+					"type": "choice",
+					"key": "loginPopup",
+					"value": [{
+						"name": "自动管理",
+						"key": "auto",
+						"description": "自动识别场景，根据不同场合选择是否屏蔽登录弹窗"
+					}, {
+						"name": "直接屏蔽",
+						"key": "hide",
+						"description": "遇到登录弹窗，直接屏蔽"
+					}, {
+						"name": "不屏蔽",
+						"key": "display",
+						"description": "遇到登录弹窗，不进行任何操作"
+					}]
+				}, {
+					"name": "提取地址",
+					"type": "choice",
+					"key": "download",
+					"value": [{
+						"name": "默认格式",
+						"key": "default",
+						"description": "提取当前直播默认推流地址。一般情况下，抖音直播推流都为m3u8，少部分为flv"
+					}, {
+						"name": "m3u8",
+						"key": "m3u8",
+						"description": "提取m3u8格式直播视频的推流地址"
+					}, {
+						"name": "flv",
+						"key": "flv",
+						"description": "提取flv格式直播视频的推流地址"
 					}]
 				}, {
 					"name": "反馈建议",
@@ -923,9 +1034,15 @@
 			}
 		},
 		reset: function() {
-			for (let i in this.backupData) {
-				this.data[i] = this.backupData[i];
+			var backupData;
+			if (/livehome|livedetail/i.test(currentPage)) {
+				backupData = set.baseData.live;
+			} else {
+				backupData = set.baseData.video;
 			}
+			set.data = tools.cloneJSON(backupData);
+			set.close();
+			set.create();
 		},
 		apply: function() {
 			var msg = "正在保存中\n应用设置需重载当前页面,是否继续应用设置?\n";
@@ -974,8 +1091,8 @@
 			var bodyHeight = document.body.clientHeight;
 			var pageWidth = bodyWidth - 40;
 			var pageHeight = bodyHeight - 40;
-			pageWidth = 350 < pageWidth ? 350 : pageWidth;
-			pageHeight = 340 < pageWidth ? 340 : pageHeight;
+			pageWidth = 360 < pageWidth ? 360 : pageWidth;
+			pageHeight = 360 < pageHeight ? 360 : pageHeight;
 			var pageLeft = (bodyWidth - pageWidth) / 2;
 			var pageTop = (bodyHeight - pageHeight) / 2;
 			page.style = "width:" + pageWidth + "px;height:" + pageHeight +
@@ -1001,7 +1118,7 @@
 		createBody: function() {
 			var body = document.createElement("div");
 			body.id = "downloaderSettingPage-body";
-			body.style = "width:100%;height:calc(100% - 100px);";
+			body.style = "width:100%;height:calc(100% - 100px);overflow:auto auto;";
 			var data = this.opt.data;
 			for (let i in data) {
 				body.appendChild(this.createOpt(data[i]));
@@ -1117,7 +1234,6 @@
 		currentPage = tools.identifySite();
 		main.jump();
 		main.popup();
-		init.login();
 		if (Page !== currentPage) {
 			if (Page !== "others") {
 				console.log("页面切换(上一页为" + Page + "页)");
