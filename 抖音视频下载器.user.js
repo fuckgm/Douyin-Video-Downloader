@@ -1,15 +1,17 @@
 // ==UserScript==
 // @name         抖音视频下载器
 // @namespace    http://tampermonkey.net/
-// @version      1.29
+// @version      1.30
 // @description  下载抖音APP端禁止下载的视频、下载抖音无水印视频、免登录使用大部分功能、屏蔽不必要的弹窗,适用于拥有或可安装脚本管理器的电脑或移动端浏览器,如:PC端Chrome、Edge、华为浏览器等,移动端Kiwi、Yandex、Via等
 // @author       那年那兔那些事
 // @license      MIT License
 // @include      *://*.douyin.com/*
 // @include      *://*.douyinvod.com/*
+// @include      *://*.idouyinvod.com/*
 // @include      *://*.iesdouyin.com/*
 // @include      *://*.zjcdn.com/*
 // @icon         https://s3.bmp.ovh/imgs/2021/08/63899211b3595b11.png
+// @require      https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js
 // ==/UserScript==
 
 (function() {
@@ -56,7 +58,7 @@
 				} else {
 					res = "livedetail";
 				}
-			} else if (Url.search("douyinvod.com") !== -1 && Url.search("/video/tos/") !== -1) {
+			} else if (/douyinvod.com|zjcdn.com/i.test(Url) && Url.search("/video/tos/") !== -1) {
 				res = "download";
 			}
 			return res;
@@ -65,33 +67,38 @@
 			if (!pareObj) {
 				pareObj = document;
 			}
-			var res0, res1; //0:author,1:title
+			var title, author, id; //0:author,1:title,2:id
 			switch (type) {
 				case "share":
-					res0 = pareObj.getElementsByClassName("author-name").children[0];
-					res1 = pareObj.getElementsByClassName("desc")[0];
+					title = pareObj.getElementsByClassName("desc")[0];
+					author = pareObj.getElementsByClassName("author-name").children[0];
+					id = location.pathname.split("video/")[1].replace("/", "");
 					break;
 				case "list":
-					res0 = pareObj.children[2].children[0];
-					res1 = pareObj.children[1];
+					author = pareObj.children[2].children[0];
+					title = pareObj.children[1];
+					id = pareObj.children[0].href.split("video/")[1].replace("/", "");
 					break;
 				case "swiper":
-					res0 = pareObj.getElementsByClassName("mzZanXbP")[0];
-					res1 = pareObj.getElementsByClassName("title")[0];
+					author = pareObj.getElementsByClassName("mzZanXbP")[0];
+					title = pareObj.getElementsByClassName("title")[0];
+					id = pareObj.getElementsByClassName("xgplayer-icon content-wrapper hasMarginRight")[0]
+						.href.split("?")[0].split("video/")[1].replace("/", "");
 					break;
 				case "video":
-					res0 = pareObj.getElementsByClassName("mzZanXbP")[0];
-					res1 = pareObj.getElementsByClassName("AQHQ2slR")[0];
+					author = pareObj.getElementsByClassName("WLXvBZ9-")[0];
+					title = pareObj.getElementsByClassName("AQHQ2slR")[0];
+					id = location.pathname.split("video/")[1].replace("/", "");
 					break;
 				default:
 					break;
 			}
-			if (!res0 || !res1) {
+			if (!title || !author || !id) {
 				return "";
 			}
-			res0 = res0.innerText.replace(/(^\s*)|(\s*$)/g, "");
-			res1 = res1.innerText.replace(/(^\s*)|(\s*$)/g, "").slice(0, 30); //限制在30个字符内
-			return res1 + "@" + res0;
+			author = author.innerText.replace(/(^\s*)|(\s*$)/g, "");
+			title = title.innerText.replace(/(^\s*)|(\s*$)/g, "").slice(0, 30); //限制30字符
+			return title + "@" + author + "@" + id;
 		},
 		downloadLink: function(url, name) {
 			if (name) {
@@ -134,9 +141,10 @@
 					name = name.split("@")[0];
 					break;
 				case "id":
-					name = location.pathname.split("/")[1];
+					name = name.split("@")[2];
 					break;
 				default:
+					name = name.split("@")[0] + "@" + name.split("@")[1];
 					break;
 			}
 			name = name ? name : "抖音视频";
@@ -153,6 +161,23 @@
 				...origin,
 				...target
 			};
+		},
+		fetchUrl: function(id) {
+			if (typeof jQuery !== "function") {
+				return false;
+			}
+			var url = "https://www.douyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + id;
+			var resUrl;
+			$.ajax({
+				url: url,
+				type: "get",
+				async: false,
+				success: function(res) {
+					resUrl = res.item_list[0].video.play_addr.url_list[0].replace("playwm",
+						"play");
+				}
+			})
+			return resUrl;
 		}
 	}
 
@@ -176,23 +201,6 @@
 			}
 		},
 		list: function(a0, i) {
-			var VideoUrl;
-			var videoID = a0.parentElement.children[0].href;
-			if (videoID !== undefined) {
-				videoID = videoID.slice(videoID.search("video/") + "video/".length);
-				var res = fetch("https://www.douyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + videoID)
-					.then(
-						response =>
-						response
-						.json())
-					.then(function(resJson) {
-						VideoUrl = resJson.item_list[0].video.play_addr.url_list[0].replace("playwm",
-							"play");
-					});
-			} else {
-				videoID = "";
-				VideoUrl = "";
-			}
 			var a01 = a0.children[1];
 			var a02 = document.createElement("span");
 			a02.innerHTML =
@@ -210,9 +218,10 @@
 				}
 				a0.appendChild(a02);
 			} else {
-				var UrlAnnexe = tools.videoName("list", a0.parentElement);
+				var videoName = tools.videoName("list", a0.parentElement);
+				var videoUrl = tools.fetchUrl(videoName.split("@")[2]);
 				a02.onclick = function() {
-					open(tools.downloadLink(VideoUrl, UrlAnnexe));
+					open(tools.downloadLink(videoUrl, videoName));
 				}
 				a0.insertBefore(a02, a01);
 			}
@@ -239,37 +248,41 @@
 				newBtnBox.appendChild(newBtn);
 				BtnList.appendChild(newBtnBox);
 			},
-			change: function(BtnList, videoURL, presentObj) {
+			change: function(BtnList, videoID, presentObj) {
 				var newBtnBox = BtnList.getElementsByClassName("newBtnDownload")[0];
 				if (newBtnBox) {
 					var newBtn = newBtnBox.children[0];
-					if (videoURL) {
-						var newVideoURL = tools.downloadLink(videoURL, tools.videoName("swiper"),
-							presentObj);
-						newBtn.children[0].onclick = function() {
-							open(newVideoURL);
-						}
-						newBtn.children[1].innerHTML = "<a href=" + newVideoURL +
-							" style='text-decoration : none'>下载</a>";
-						newBtn.setAttribute("data-src", videoURL);
+					newBtn.setAttribute("data-id", videoID);
+					newBtn.children[0].onclick = function() {
+						alert("正在获取地址中，请稍后再试");
 					}
+					newBtn.children[1].innerHTML =
+						"<a href='javascript:alert('正在获取地址中，请稍后再试')' style='text-decoration : none'>下载</a>";
+					var videoURL = tools.fetchUrl(videoID);
+					var videoName = tools.videoName("swiper", presentObj);
+					videoURL = tools.downloadLink(videoURL, videoName);
+					newBtn.children[0].onclick = function() {
+						open(videoURL);
+					}
+					newBtn.children[1].innerHTML = "<a href=" + videoURL +
+						" style='text-decoration : none'>下载</a>";
 				}
 			}
 		},
 		video: function(BtnList) {
 			if (!document.getElementById("newBtnDownload")) {
-				var videoURL = document.getElementsByTagName("video")[0];
+				var videoURL = document.getElementById("RENDER_DATA").innerText;
+				videoURL = JSON.parse(decodeURIComponent(videoURL));
+				videoURL = videoURL.C_20.aweme.detail.video.playAddr[0].src.replace("playwm", "play");
 				if (videoURL) {
-					videoURL = videoURL.getElementsByTagName("source")[0].src;
 					videoURL = tools.downloadLink(videoURL, tools.videoName("video"));
-					console.log(videoURL);
 					var newBtn = BtnList.children[2].cloneNode(true);
 					newBtn.setAttribute("id", "newBtnDownload");
 					newBtn.children[0].children[0].setAttribute("d",
 						"M12 7h8v8h-8z M8 15L24 15 16 24z M5 24h22v2h-22z M5 20h2v4h-2z M25 20h2v4h-2z");
 					newBtn.children[1].setAttribute("class", "iR6dOMAO");
 					newBtn.children[1].innerHTML = "<a href=" + videoURL +
-						" style='text-decoration : none'>下载</a>";
+						" style='text-decoration : none' target='_blank'>下载</a>";
 					newBtn.children[0].onclick = function() {
 						open(videoURL);
 					}
@@ -553,6 +566,12 @@
 		},
 		home: function() {
 			init.main();
+			if(typeof jQuery!=="function"){
+				var msg="部分功能可能无法在此浏览器上使用\n桌面端建议使用edge浏览器，移动端建议使用kiwi浏览器";
+				console.log(msg);
+				alert(msg);
+				return false;
+			}
 			Timer = setInterval(function() {
 				var a = document.getElementsByClassName("_2NJWgK5p");
 				if (a.length !== 0) {
@@ -567,6 +586,12 @@
 		},
 		recommend: function() {
 			init.main();
+			if(typeof jQuery!=="function"){
+				var msg="部分功能可能无法在此浏览器上使用\n桌面端建议使用edge浏览器，移动端建议使用kiwi浏览器";
+				console.log(msg);
+				alert(msg);
+				return false;
+			}
 			var BtnList, newBtnBox, presentObj, videoURL, btnObj;
 			Timer = setInterval(function() {
 				BtnList = document.getElementsByClassName("TvKp5rIf")[0];
@@ -578,15 +603,11 @@
 						btnObj = newBtnBox.children[0];
 						presentObj = document.getElementsByClassName(
 							"swiper-slide _79rCAeWZ swiper-slide-active")[0];
-						try {
-							videoURL = presentObj.getElementsByTagName("video")[0];
-							videoURL = videoURL.children[0].src;
-						} catch (e) {
-							videoURL = false;
-							console.log("找不到videoURL");
-						}
-						if (videoURL && btnObj.getAttribute("data-src") !== videoURL) {
-							createBtn.swiper.change(BtnList, videoURL, presentObj);
+						var videoID = presentObj.getElementsByClassName(
+							"xgplayer-icon content-wrapper hasMarginRight")[0].href;
+						videoID = videoID.split("?")[0].split("video/")[1].replace("/", "");
+						if (videoID && btnObj.getAttribute("data-id") !== videoID) {
+							createBtn.swiper.change(BtnList, videoID, presentObj);
 						}
 					}
 				}
@@ -839,7 +860,7 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.29"
+					"value": "v1.30"
 				}, {
 					"name": "视频文件名",
 					"type": "choice",
@@ -904,7 +925,7 @@
 					"name": "当前版本",
 					"type": "text",
 					"key": "version",
-					"value": "v1.29"
+					"value": "v1.30"
 				}, {
 					"name": "沉浸观看",
 					"type": "choice",
@@ -969,17 +990,17 @@
 					"type": "choice",
 					"key": "download",
 					"value": [{
-						"name": "默认格式",
+						"name": "默认地址",
 						"key": "default",
-						"description": "提取当前直播默认推流地址。一般情况下，抖音直播推流都为m3u8，少部分为flv"
+						"description": "提取当前直播间画面采用的推流地址。一般情况下，抖音直播推流都为m3u8，少部分为flv。flv延迟一般比m3u8低一点点"
 					}, {
-						"name": "m3u8",
+						"name": "m3u8地址",
 						"key": "m3u8",
-						"description": "提取m3u8格式直播视频的推流地址"
+						"description": "提取m3u8格式直播原画画质的推流地址。m3u8格式视频播放比较方便，但是第三方播放器播放播放直播，一般情况下延迟比官方直播间还要长几秒"
 					}, {
-						"name": "flv",
+						"name": "flv地址",
 						"key": "flv",
-						"description": "提取flv格式直播视频的推流地址"
+						"description": "提取flv格式直播原画画质的推流地址。使用第三方播放器播放直播，一般情况下延迟比官方直播间还要短几秒（ps：一般直播视频从主播到用户那里都会有延迟）"
 					}]
 				}, {
 					"name": "反馈建议",
