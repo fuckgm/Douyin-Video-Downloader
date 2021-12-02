@@ -499,6 +499,39 @@
 				btn.children[0].setAttribute("fill", "var(--color-text-3)");
 			}
 			box.appendChild(btn);
+		},
+		share:function(){
+			var shareBox=document.getElementsByClassName("VYAVbHvT")[0];
+			if(shareBox&&shareBox.name!=="newShareBox"){
+				var tokenBtn=shareBox.children[1];
+				var linkBtn=tokenBtn.cloneNode(true);
+				var shortLink=shareBox.firstChild.innerText;
+				shortLink=/(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/g.exec(shortLink)[0];
+				linkBtn.setAttribute("data-shortLink",shortLink);
+				linkBtn.onclick=function(){
+					var copyBox=document.createElement("input");
+					copyBox.value=this.getAttribute("data-shortLink");
+					document.body.appendChild(copyBox);
+					copyBox.select();
+					document.execCommand('copy');
+					copyBox.remove();
+					var alertMsg=document.createElement("div");
+					alertMsg.setAttribute("class","mwDSfjqo cqwXIZ7n");
+					alertMsg.innerText="分享短链已复制到剪贴板";
+					setTimeout(function() {alertMsg.remove()}, 3500);
+					document.getElementsByClassName("mylaiMgB")[0].appendChild(alertMsg);
+				}
+				linkBtn.innerText="短链";
+				linkBtn.id="shortLinkShareBtn";
+				linkBtn.style.marginLeft="2px";
+				tokenBtn.innerText="口令";
+				var btnWidth=Math.ceil(getComputedStyle(tokenBtn).width.replace("px",""));
+				var textWidth=Math.floor(getComputedStyle(shareBox.firstChild).width.replace("px",""));
+				shareBox.firstChild.style.width=(textWidth-btnWidth-20)+"px";
+				shareBox.lastChild.style.borderRadius="0px";
+				shareBox.appendChild(linkBtn);
+				shareBox.name="newShareBox";
+			}
 		}
 	};
 
@@ -640,6 +673,7 @@
 						}
 					}
 				}
+				createBtn.share();
 			}, 200);
 			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
 		},
@@ -661,14 +695,9 @@
 						createBtn.video(BtnList);
 					}
 				}
+				createBtn.share();
 			}, 200);
 			console.log("抖音视频下载器(" + Page + "页)启动,定时器(id:" + Timer + ")开启");
-			setTimeout(function() {
-				if (Timer !== -1) {
-					clearInterval(Timer);
-					console.log("2s超时,定时器(id:" + Timer + ")关闭");
-				}
-			}, 2000);
 		},
 		search: function() {
 			this.home();
